@@ -555,7 +555,7 @@
           v-model="showChoiceTime"
           :actions="dayList"
           cancel-text="取消"
-          name="选择日期"
+          title="选择日期"
           v-on:cancel="closeChoiceTime"
           @select="(item,index)=>choiceTime(index)"
         />
@@ -566,7 +566,7 @@
           :actions="nameList"
           cancel-text="取消"
           v-on:cancel="closeChoice"
-          name="选择设备"
+          title="选择设备"
           @select="(item,index) => choiceDevice(index)"
         />
       </div>
