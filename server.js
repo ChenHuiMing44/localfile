@@ -1,6 +1,6 @@
 const fs = require("fs");
 const http = require("http");
-const xmlParse = require("./static/xml2json/lib/index");
+const xmlParse = require("./static/xml2json");
 
 function fileReader() {
   return new Promise((resolve, reject) => {
@@ -12,7 +12,7 @@ function fileReader() {
           console.log("读取文件失败,内容是" + error.message);
           reject({ type: "error", content: error });
         } else {
-          const jsonData = xml2json(data);
+          const jsonData = data;
           if (jsonData) {
             resolve({ type: "success", content: jsonData });
           } else {
@@ -27,7 +27,9 @@ function fileReader() {
 function xml2json(xml) {
   try {
     return JSON.parse(xmlParse.toJson(xml));
-  } catch (e) {}
+  } catch (e) {
+    console.log(44444);
+  }
   return "";
 }
 
