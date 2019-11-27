@@ -1,6 +1,6 @@
 const fs = require("fs");
 const http = require("http");
-const xmlParse = require("xml2json");
+const xmlParse = require("./static/xml2json/lib/index");
 
 function fileReader() {
   return new Promise((resolve, reject) => {
