@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>录像分析</title>
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1.0,user-scalable=0,maximum-scale=1.0"
+    />
+    <link rel="stylesheet" href="static/weui.min.css" />
+    <link rel="stylesheet" href="static/weui2.css" />
+    <link rel="stylesheet" href="static/style.css" />
+    <script src="static/zepto.min.js" type="text/javascript"></script>
+    <script src="static/vue.min.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="static/vant.css" />
+    <!--    <script type="text/javascript" src="static/vant.min.js"></script>-->
+    <script src="https://cdn.jsdelivr.net/npm/vant@2.2/lib/vant.min.js"></script>
+    <script>
+      Vue.component("drop-line", {
+        props: {
+          timeInfo: Object,
+          day: {
+            type: String | Number
+          }
+        },
+        data() {
+          return {
+            activeIndex: ""
+          };
+        },
+        filters: {
+          timeStamp(val) {
+            const time = new Date(val);
+            return "11";
+          }
+        },
+        methods: {
+          getPoint(stamp) {
+            const duration = this.endStamp - this.startStamp;
+            const startLength = stamp - this.startStamp;
+            if (stamp > 0) {
+              return Math.min(100, (startLength / duration) * 100);
+            }
+            return 0;
+          },
+          tapStampItem(item, index) {
+            if (this.activeIndex === index) {
+              this.activeIndex = "";
+            } else if (item.isErr) {
+              this.activeIndex = index;
+            }
+          }
+        },
+        computed: {
+          timeInterval() {
+            return [
+              {
+                point: "2%",
+                label: "0:00"
+              },
+              {
+                point: "16.7%",
+                label: "04:00"
+              },
+              {
+                point: "33.4%",
+                label: "08:00"
+              },
+              {
+                point: "50%",
+                label: "12:00"
+              },
+              {
+                point: "66.7%",
+                label: "16: 00"
+              },
+              {
+                point: "83.4%",
+                label: "20:00"
+              },
+              {
+                point: "98%",
+                label: "24:00"
+              }
+            ];
+          },
+          //开始结束时间都写死 为  8点到  16点
+          startStamp() {
+            if (this.day) {
+              return Number(this.day) * 1000 + 0 * 60 * 60 * 1000; //那边给的是 秒
+            }
+            return 0;
+          },
+          endStamp() {
+            if (this.day) {
+              return Number(this.day) * 1000 + 24 * 60 * 60 * 1000; //那边给的是 秒
+            }
+            return 0;
+          },
+          sortArr() {
+            if (this.timeInfo) {
+              const keysSort = Object.keys(this.timeInfo).sort((key1, key2) => {
+                let key1index = Number(key1.split("_")[1] || 0);
+                let key2index = Number(key2.split("_")[1] || 0);
+                return key1index > key2index ? 1 : -1;
+              });
+              return keysSort.map(item => {
+                return this.timeInfo[item];
+              });
+            }
+            return [];
+          },
+          stampSort() {
+            const deviation = 30 * 1000; //30秒的误差
+            if (this.sortArr && this.sortArr.length) {
+              const faultArr = [];
+              for (let i = 0; i < this.sortArr.length; i++) {
+                const lastStamp =
+                  i === 0
+                    ? this.startStamp
+                    : Number(this.sortArr[i - 1].endtime) * 1000;
+                if (
+                  lastStamp + deviation <
+                  Number(this.sortArr[i].starttime) * 1000
+                ) {
+                  faultArr.push({
+                    start: lastStamp,
+                    end: Number(this.sortArr[i].starttime) * 1000
+                  });
+                }
+                if (
+                  i === this.sortArr.length - 1 &&
+                  Number(this.sortArr[i].endtime) * 1000 + deviation <
+                    this.endStamp
+                ) {
+                  faultArr.push({
+                    start: Number(this.sortArr[i].endtime) * 1000,
+                    end: this.endStamp
+                  });
+                }
+              }
+              return faultArr;
+            }
+            return [
+              {
+                start: this.startStamp,
+                end: this.endStamp
+              }
+            ];
+          },
+          barStamp() {
+            const deviation = 30 * 1000; //30秒的误差
+            const arr = [];
+            if (this.stampSort && this.stampSort.length) {
+              for (let i = 0; i < this.stampSort.length; i++) {
+                const lastTime =
+                  i === 0 ? this.startStamp : this.stampSort[i - 1].end;
+                if (this.stampSort[i].start > lastTime + deviation) {
+                  arr.push({
+                    isErr: false,
+                    start: lastTime,
+                    end: this.stampSort[i].start,
+                    sPoint: this.getPoint(lastTime),
+                    ePoint: this.getPoint(this.stampSort[i].start)
+                  });
+                  arr.push({
+                    //保证 最小为1%
+                    isErr: true,
+                    start: this.stampSort[i].start,
+                    end: this.stampSort[i].end,
+                    sPoint: this.getPoint(this.stampSort[i].start),
+                    ePoint: this.getPoint(this.stampSort[i].end)
+                  });
+                } else {
+                  arr.push({
+                    isErr: true,
+                    start: lastTime,
+                    end: this.stampSort[i].end,
+                    sPoint: this.getPoint(lastTime),
+                    ePoint: this.getPoint(this.stampSort[i].end)
+                  });
+                }
+                if (i === this.stampSort.length - 1) {
+                  const successArea = {
+                    isErr: false,
+                    start: this.stampSort[i].end,
+                    end: this.endStamp,
+                    sPoint: this.getPoint(this.stampSort[i].end),
+                    ePoint: this.getPoint(this.endStamp)
+                  };
+                  successArea.start + deviation < successArea.end &&
+                    arr.push(successArea);
+                }
+              }
+            } else {
+              arr.push({
+                isErr: false,
+                start: this.startStamp,
+                end: this.endStamp,
+                sPoint: 0,
+                ePoint: 100
+              });
+            }
+            return arr;
+          },
+          startTimeLabel() {
+            if (this.activeIndex !== "") {
+              const time = new Date(this.barStamp[this.activeIndex].start);
+              const min =
+                time.getMinutes() < 10
+                  ? "0" + time.getMinutes()
+                  : time.getMinutes();
+              return time.getHours() + ":" + min;
+            }
+            return "";
+          },
+          endTimeLabel() {
+            if (this.activeIndex !== "") {
+              const time = new Date(this.barStamp[this.activeIndex].end);
+              const min =
+                time.getMinutes() < 10
+                  ? "0" + time.getMinutes()
+                  : time.getMinutes();
+              return time.getHours() + ":" + min;
+            }
+            return "";
+          },
+          startTimePoint() {
+            if (this.activeIndex !== "") {
+              //min width  20%
+              const item = this.barStamp[this.activeIndex];
+              const duraPoint = item.ePoint - item.sPoint;
+              if (duraPoint < 16) {
+                return item.sPoint - (20 - duraPoint) / 2;
+              }
+              return item.sPoint - 2;
+            }
+            return "";
+          },
+          endTimePoint() {
+            if (this.activeIndex !== "") {
+              const item = this.barStamp[this.activeIndex];
+              const duraPoint = item.ePoint - item.sPoint;
+              if (duraPoint < 16) {
+                return item.ePoint + (20 - duraPoint) / 2;
+              }
+              return item.ePoint + 2;
+            }
+            return "";
+          }
+        },
+        mounted() {
+          window.addEventListener("click", () => {
+            this.activeIndex = "";
+          });
+        },
+        template: `
+        <div class="drop-line">
+          <div class="stamp-list">
+            <template v-for="(item, index) in barStamp">
+              <div class="stamp-item"
+                v-on:click.stop="tapStampItem(item, index)"
+                :class="{
+                  'red-back': item.isErr,
+                  'green-back': !item.isErr, active: index === activeIndex,
+                  'first': index === 0,
+                  'last': index === barStamp.length -1,
+                  'err': item.isErr
+                }"
+                :style="{left: (item.sPoint - (activeIndex===index)*3) + '%',right: (100-item.ePoint-(activeIndex===index)*3)+'%'}"
+              >
+              </div>
+            </template>
+
+            <template >
+              <div class="time-mark-line"
+                :style="{
+                  left: startTimePoint+'%',
+                  right: (100-endTimePoint)+'%'
+                }"
+              >
+                <span style="text-align: left">{{startTimeLabel}}</span>
+                <span style="text-align: right">{{endTimeLabel}}</span>
+              </div>
+            </template>
+          </div>
+          <div class="time-list">
+            <template v-for="(item, index) in timeInterval">
+              <span class="interval-item" :style="{left: item.point}">
+                {{item.label}}
+              </span>
+            </template>
+          </div>
+        </div>
+      `
+      });
+      //设备列表，每个设备多个通道，
+      window.onload = function() {
+        const app = new Vue({
+          el: "#app",
+          data: {
+            deviceEnum: "",
+            defaultEnumIndex: 0,
+            isOpenList: [],
+            showChoice: false,
+            showChoiceTime: false,
+            defaultTimeIndex: 0
+          },
+          computed: {
+            nameList() {
+              let list = [];
+              if (this.deviceEnum) {
+                list = Object.keys(this.deviceEnum).map(key => {
+                  return {
+                    name: this.deviceEnum[key].name,
+                    keys: key
+                  };
+                });
+              }
+              return list;
+            },
+            dateKey() {
+              if (
+                this.timeList.length &&
+                this.timeList[this.defaultTimeIndex]
+              ) {
+                return "date_" + this.timeList[this.defaultTimeIndex];
+              }
+              return "";
+            },
+            dayList() {
+              if (this.timeList.length) {
+                return this.timeList.map(item => {
+                  const currentTime = new Date(Number(item) * 1000);
+                  const m = currentTime.getMonth() + 1;
+                  const d = currentTime.getDate();
+                  return { name: `${m}-${d}` };
+                });
+              }
+              return [];
+            },
+            deviceInfo() {
+              const key =
+                this.nameList &&
+                this.nameList[this.defaultEnumIndex] &&
+                this.nameList[this.defaultEnumIndex].keys;
+              if (this.deviceEnum && key && this.deviceEnum[key]) {
+                const info = {}; //point  nameList name
+                info.name = this.deviceEnum[key].name;
+                const pointList = this.deviceEnum[key].pointlist;
+                const keyList = [];
+                const point = [];
+                for (let key in pointList) {
+                  const item = pointList[key];
+                  let deviceName = item.name.replace(/\d+$/, "");
+                  item.slot = Number(item.name.replace(deviceName, "")) || 1;
+                  let targetIndex = keyList.indexOf(deviceName);
+                  if (targetIndex !== -1) {
+                    point[targetIndex].push(item);
+                  } else {
+                    keyList.push(deviceName);
+                    point.push([item]);
+                  }
+                }
+                //排序通道
+                point.forEach((item, index) => {
+                  point[index] = item.sort((item1, item2) => {
+                    return item1.slot > item2.slot ? 1 : -1;
+                  });
+                });
+                info.point = point;
+                info.keyList = keyList;
+                return info;
+              }
+              return {};
+            },
+            timeList() {
+              if (
+                this.deviceInfo.point &&
+                this.deviceInfo.point[0][0] &&
+                this.deviceInfo.point[0][0].recordchecck
+              ) {
+                const check = this.deviceInfo.point[0][0].recordchecck;
+
+                return (
+                  check &&
+                  Object.keys(check).map(item => {
+                    return item.split("_")[1];
+                  })
+                );
+              }
+              return [];
+            }
+          },
+          mounted() {
+            const that = this;
+            $.ajax({
+              url: "/file",
+              method: "get",
+              success(data) {
+                console.log(JSON.parse(data));
+                const deviceEnum = that.graceVal(
+                  JSON.parse(data),
+                  "content.root.devicelist"
+                );
+                if (deviceEnum) {
+                  that.isOpenList = [];
+                  that.deviceEnum = deviceEnum;
+                }
+              },
+              error(err) {
+                console.error(err);
+              }
+            });
+          },
+          methods: {
+            graceVal: function(data, path) {
+              const pathList = path.split(/[ \.]/);
+              let tmpVal = data;
+              try {
+                for (let i = 0; i < pathList.length; i++) {
+                  tmpVal = tmpVal[pathList[i]];
+                }
+                return tmpVal;
+              } catch (e) {}
+              return null;
+            },
+            tapChoice() {
+              //点击选择list
+              this.showChoice = true;
+            },
+            tapChoiceTime() {
+              console.log(4444);
+              this.showChoiceTime = true;
+            },
+            closeChoice() {
+              this.showChoice = false;
+            },
+            closeChoiceTime() {
+              this.showChoiceTime = false;
+            },
+            toggleOpen(index) {
+              //以后解决 数组不刷新问题
+              this.$set(this.isOpenList, index, !this.isOpenList[index]);
+            },
+            choiceDevice(index) {
+              if (index !== this.defaultEnumIndex) {
+                this.defaultEnumIndex = index;
+                this.showChoice = false;
+                this.isOpenList = [];
+                this.defaultTimeIndex = 0;
+              }
+              this.showChoice = false;
+            },
+            choiceTime(index) {
+              if (index !== this.defaultTimeIndex) {
+                this.defaultTimeIndex = index;
+                this.isOpenList = [];
+              }
+              this.showChoiceTime = false;
+            }
+          }
+        });
+        window.app = app;
+      };
+    </script>
+  </head>
+  <body>
+    <div class="container" id="app">
+      <div class="weui_btn_primary weui-header ">
+        <h1 class="weui-header-title">录像分析</h1>
+      </div>
+      <!--  <div style="height: 46px"></div>-->
+      <div class="content">
+        <div class="page-hd ">
+          <h1 class="page-hd-title under-line" @click="tapChoice">
+            {{deviceInfo && deviceInfo.name}}
+          </h1>
+          <h1 class="page-hd-title">
+            日期:
+            <span class="under-line" @click="tapChoiceTime">
+              <template v-if="dayList && dayList.length ">
+                {{dayList[defaultTimeIndex].name}}
+              </template>
+            </span>
+          </h1>
+          <p class="page-hd-desc">
+            绿色波段表示正常，红色波段表示异常
+          </p>
+        </div>
+        <div class="page-bd">
+          <ul>
+            <template v-for="(item, index) in deviceInfo.point">
+              <li :key="index" :class="{'js-show': isOpenList[index]}">
+                <div class="weui-flex js-category" @click="toggleOpen(index)">
+                  <p class="weui-flex-item">
+                    {{deviceInfo.keyList[index]}}
+                  </p>
+                  <i
+                    class="icon"
+                    :class="{'icon-74': !isOpenList[index], 'icon-35': isOpenList[index]}"
+                  ></i>
+                </div>
+                <div
+                  class="page-category js-categoryInner"
+                  :style="{height: isOpenList[index]?'auto':0}"
+                >
+                  <div
+                    class="weui_cells weui_cells_access page-hd"
+                    style="margin-top: 0px;"
+                  >
+                    <div class="pass-list">
+                      <template v-for="(passItem, passIndex) in item">
+                        <div class="pass-item" v-if="passItem">
+                          <span class="pass-item-title"
+                            >通道{{passIndex+1}}</span
+                          >
+                          <div
+                            class="pass-info-detail"
+                            v-if="passItem.recordchecck && passItem.recordchecck[dateKey]"
+                          >
+                            <div class="status-line">
+                              <span>
+                                是否连网: {{passItem.online ===
+                                '0'?'断网':passItem.online === '1'?'在线':'未知'
+                                }}
+                              </span>
+                              <span>
+                                是否完整:
+                                {{passItem.recordchecck[dateKey].iscomplete ===
+                                '1'?'完整':'不完整'}}
+                              </span>
+                            </div>
+                            <div class="defect-info">
+                              <span class="defect-title">视频丢失监测</span>
+                              <drop-line
+                                :time-info="passItem.recordchecck[dateKey].search_result_list"
+                                :day="passItem.recordchecck[dateKey].id"
+                              />
+                            </div>
+                          </div>
+                          <div v-else>暂无数据</div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </template>
+          </ul>
+        </div>
+      </div>
+      <div>
+        <van-action-sheet
+          v-model="showChoiceTime"
+          :actions="dayList"
+          cancel-text="取消"
+          name="选择日期"
+          v-on:cancel="closeChoiceTime"
+          @select="(item,index)=>choiceTime(index)"
+        />
+      </div>
+      <div>
+        <van-action-sheet
+          v-model="showChoice"
+          :actions="nameList"
+          cancel-text="取消"
+          v-on:cancel="closeChoice"
+          name="选择设备"
+          @select="(item,index) => choiceDevice(index)"
+        />
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,177 @@
+/* 姑且用 flex 布局 */
+* {
+  margin: 0;
+  padding: 0;
+  font-size: 13px;
+}
+body {
+  background-color: #f5f5f5;
+}
+
+.container {
+  overflow: hidden;
+}
+
+.nav-bar {
+  height: 44px;
+  /*border-bottom: .5px solid #ddd;*/
+  background-color: #fbfbfb;
+  padding: 10px;
+  text-align: center;
+  box-sizing: border-box;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+}
+
+.nav-bar .title {
+  font-size: 19px;
+  line-height: 22px;
+  font-weight: 500;
+  color: #072b25;
+}
+
+.nav-bar-back {
+  height: 44px;
+}
+
+.stamp-list {
+  border-radius: 4px;
+  /*overflow: hidden;*/
+  height: 10px;
+  width: 100%;
+  position: relative;
+}
+.red-back {
+  background-color: #ff6554;
+}
+.green-back {
+  background-color: #23b1b4;
+}
+
+.stamp-item {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: all 0.3s;
+  min-width: 2px;
+}
+.stamp-item.err {
+  z-index: 5;
+}
+.stamp-item.err:before {
+  content: "";
+  position: absolute;
+  right: -5px;
+  left: -5px;
+  top: 0;
+  bottom: 0;
+}
+.stamp-item.first {
+  border-bottom-left-radius: 5px;
+  border-top-left-radius: 5px;
+}
+.stamp-item.last {
+  border-top-right-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+.stamp-item.active {
+  z-index: 99;
+  top: -3px;
+  bottom: -3px;
+  box-shadow: 0 0 5px #666;
+}
+.time-mark-line {
+  position: absolute;
+  top: -10px;
+  z-index: 999;
+  display: flex;
+}
+.time-mark-line span {
+  flex: 1;
+}
+.time-list {
+  margin-top: 5px;
+  height: 20px;
+  width: 100%;
+  position: relative;
+}
+.interval-item {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40px;
+  margin-left: -20px;
+  text-align: center;
+  color: #666;
+}
+
+.pass-item {
+  margin-bottom: 25px;
+}
+
+.pass-item .pass-item-title {
+  height: 20px;
+  line-height: 20px;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 5px 0;
+}
+
+.status-line {
+  padding: 5px 0;
+  height: 20px;
+  line-height: 20px;
+}
+
+.status-line span {
+  font-size: 15px;
+  padding-right: 20px;
+}
+.defect-info .defect-title {
+  font-size: 13px;
+  padding-bottom: 20px;
+  padding-top: 8px;
+  display: block;
+  color: #666;
+}
+
+.sheet-back {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  background-color: #1112;
+  z-index: 999;
+}
+.sheet-content {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
+  max-height: 400px;
+  padding-top: 40px;
+  background-color: #fff;
+}
+
+.sheet-content .weui_cells {
+  margin-top: 0;
+}
+.sheet-content .weui_cells .sheet-title {
+}
+.sheet-content .weui_cells p {
+  font-size: 18px;
+  height: 30px;
+  line-height: 30px;
+}
+
+.under-line {
+  text-decoration: underline;
+}
+.page-hd-title .under-line {
+  font-size: 18px;
+}
