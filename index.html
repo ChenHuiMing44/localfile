@@ -353,8 +353,9 @@
                 const point = [];
                 for (let key in pointList) {
                   const item = pointList[key];
-                  let deviceName = item.name.replace(/\d+$/, "");
-                  item.slot = Number(item.name.replace(deviceName, "")) || 1;
+                  // let deviceName = item.name.replace(/\d+$/, "");
+                  let deviceName = item.name.split("_")[0];
+                  item.slot = 1;
                   let targetIndex = keyList.indexOf(deviceName);
                   if (targetIndex !== -1) {
                     point[targetIndex].push(item);
@@ -523,11 +524,11 @@
                             v-if="passItem.recordchecck && passItem.recordchecck[dateKey]"
                           >
                             <div class="status-line">
-                              <span>
-                                是否连网: {{passItem.online ===
-                                '0'?'断网':passItem.online === '1'?'在线':'未知'
-                                }}
-                              </span>
+                              <!--                              <span>-->
+                              <!--                                是否连网: {{passItem.online ===-->
+                              <!--                                '0'?'断网':passItem.online === '1'?'在线':'未知'-->
+                              <!--                                }}-->
+                              <!--                              </span>-->
                               <span>
                                 是否完整:
                                 {{passItem.recordchecck[dateKey].iscomplete ===
